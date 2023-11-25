@@ -74,10 +74,23 @@ $result = $stmt->execute();
 $row = $result->fetchArray(SQLITE3_ASSOC);
 $code = $row['code'];
 
+// Get category filter
+$categoryFilter = null;
+if (isset($_COOKIE['categoryFilter']) && $_COOKIE['categoryFilter'] != "") {
+  $categoryFilter = $_COOKIE['categoryFilter'];
+}
+
+$categoryFilter = "Music";
 
 // Calculate active subscriptions
-$query = "SELECT COUNT(*) AS active_subscriptions FROM subscriptions";
-$stmt = $db->prepare($query);
+if ($categoryFilter == null) {
+  $query = "SELECT COUNT(*) AS active_subscriptions FROM subscriptions";
+  $stmt = $db->prepare($query);
+} else {
+  $query = "SELECT COUNT(*) AS active_subscriptions FROM subscriptions INNER JOIN categories WHERE subscriptions.category_id = categories.id AND categories.name = :categoryFilter";
+  $stmt = $db->prepare($query);
+  $stmt->bindValue(':categoryFilter', $categoryFilter, SQLITE3_TEXT);
+}
 $stmt->bindParam(':criteria', $criteria, SQLITE3_INTEGER);
 $result = $stmt->execute();
 $row = $result->fetchArray(SQLITE3_ASSOC);
@@ -88,8 +101,15 @@ $mostExpensiveSubscription = 0;
 $amountDueThisMonth = 0;
 $totalCostPerMonth = 0;
 
-$query = "SELECT name, price, frequency, cycle, currency_id, next_payment, payer_user_id, category_id FROM subscriptions";
-$result = $db->query($query);
+if ($categoryFilter == null) {
+  $query = "SELECT name, price, frequency, cycle, currency_id, next_payment, payer_user_id, category_id FROM subscriptions";
+  $stmt = $db->prepare($query);
+} else {
+  $query = "SELECT subscriptions.name, price, frequency, cycle, currency_id, next_payment, payer_user_id, category_id FROM subscriptions INNER JOIN categories WHERE subscriptions.category_id = categories.id AND categories.name = :categoryFilter";
+  $stmt = $db->prepare($query);
+  $stmt->bindValue(':categoryFilter', $categoryFilter, SQLITE3_TEXT);
+}
+$result = $stmt->execute();
 if ($result) {
   while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
     $subscriptions[] = $row;
@@ -145,9 +165,23 @@ if ($result) {
     $averageSubscriptionCost = 0;
   }
 }
- 
+
+  $headerClass = count($subscriptions) > 0 ? "main-actions" : "main-actions hidden";
 ?>
 <section class="contain">
+  <header class="<?= $headerClass ?>" id="stats-actions">
+    <div class="sort-container">
+      <button class="button" value="Filter" onClick="toggleFilterOptions()" id="filter-button">
+        <img src="images/siteicons/category.png" class="button-icon" /> Filter
+      </button>
+      <div class="sort-options" id="filter-options">
+        <ul>
+          <li <?= $sort == "test" ? 'class="selected"' : "" ?> onClick="setFilterOption('test')">Test</li>
+        </ul>
+      </div>
+    </div>
+  </header>
+
   <h2>General Statistics</h2>
   <div class="statistics">
     <div class="statistic">

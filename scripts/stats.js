@@ -1,3 +1,11 @@
+let isFilterOptionsOpen = false;
+
+function toggleFilterOptions() {
+  const filterOptions = document.querySelector("#filter-options");
+  filterOptions.classList.toggle("is-open");
+  isFilterOptionsOpen = !isFilterOptionsOpen;
+}
+
 function loadGraph(container, dataPoints, currency, run) {
     if (run) {
         var ctx = document.getElementById(container).getContext('2d');
@@ -19,3 +27,19 @@ function loadGraph(container, dataPoints, currency, run) {
         });
     }
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('mousedown', function(event) {
+      const filterOptions = document.querySelector('#filter-options');
+      const filterButton = document.querySelector("#filter-button");
+
+      if (!filterOptions.contains(event.target) && !filterButton.contains(event.target) && isFilterOptionsOpen) {
+        filterOptions.classList.remove('is-open');
+        isFilterOptionsOpen = false;
+      }
+    });
+
+    document.querySelector('#filter-options').addEventListener('focus', function() {
+        isFilterOptionsOpen = true;
+    });
+});
